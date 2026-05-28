@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, JetBrains_Mono, Hanken_Grotesk } from "next/font/google";
+import PlausibleProvider from "next-plausible";
 import "./globals.css";
 
 const display = Bricolage_Grotesque({
@@ -51,7 +52,9 @@ export default function RootLayout({
       lang="en"
       className={`${display.variable} ${mono.variable} ${body.variable}`}
     >
-      <body>{children}</body>
+      <PlausibleProvider scriptProps={{ "data-domain": "ailcr.js.org" }}>
+        <body>{children}</body>
+      </PlausibleProvider>
     </html>
   );
 }
