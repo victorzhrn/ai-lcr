@@ -70,13 +70,13 @@ export const PROVIDERS: Provider[] = [
     base: "https://api.kunavo.com",
     apiKeyEnv: "KUNAVO_API_KEY",
     check: "inference",
-    // Kunavo carries Anthropic + Google only.
+    // Kunavo carries Anthropic + Google only. Opus omitted to save cost —
+    // Sonnet + Haiku are enough to represent the Claude path here.
     models: [
       { id: "gemini-2-5-flash" },
       { id: "gemini-2-5-pro" },
       { id: "claude-haiku-4-5" },
       { id: "claude-sonnet-4-6" },
-      { id: "claude-opus-4-7" },
     ],
     link: "https://kunavo.com/?ref=victorimf",
     integrity: {
