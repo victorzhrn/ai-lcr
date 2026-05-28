@@ -7,3 +7,6 @@ dist/
 coverage/
 .turbo/
 *.tsbuildinfo
+
+# Claude Code local tooling
+.claude/
