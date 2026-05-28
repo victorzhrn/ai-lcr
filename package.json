@@ -46,15 +46,13 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
-  "dependencies": {
-    "ai-fallback": "^2.0.0"
-  },
   "peerDependencies": {
     "ai": "^6.0.0"
   },
   "devDependencies": {
     "@ai-sdk/openai-compatible": "^2.0.0",
     "@ai-sdk/provider": "^3.0.0",
+    "@types/node": "^25.9.1",
     "ai": "^6.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.5.0",

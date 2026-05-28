@@ -94,13 +94,16 @@ const openrouter = createOpenAICompatible({
 });
 
 const lcr = createLCR({
+  autoSort: true, // sort each model's providers cheapest-first by `cost`
   models: {
     // One logical model, served cheapest-first across providers.
     "gemini-3-flash": [
-      kunavo("gemini-3-flash"),                     // cheapest → tried first
-      openrouter("google/gemini-3-flash-preview"),  // fallback on failure
+      { model: kunavo("gemini-3-flash"), label: "kunavo", cost: { input: 0.35, output: 2.1 } },
+      { model: openrouter("google/gemini-3-flash-preview"), label: "openrouter", cost: { input: 0.5, output: 3.0 } },
     ],
   },
+  // See exactly what each call cost, on whichever provider served it.
+  onCost: ({ provider, costUsd }) => console.log(`${provider}: $${costUsd.toFixed(6)}`),
 });
 
 const { text } = await generateText({
@@ -109,18 +112,20 @@ const { text } = await generateText({
 });
 ```
 
-`lcr("gemini-3-flash")` returns a standard AI SDK `LanguageModel`, so it works with `generateText`, `streamText`, `generateObject`, tools, and agents.
+`cost` and `label` are optional — pass bare models (`kunavo("gemini-3-flash")`) if you don't need cost accounting or `autoSort`. `lcr("gemini-3-flash")` returns a standard AI SDK model, so it works with `generateText`, `streamText`, `generateObject`, tools, and agents.
 
 ## How it routes
 
-1. **Cheapest first.** Providers are tried in order — list them cheapest-first.
+1. **Cheapest first.** Providers are tried in order — list them cheapest-first, or set `autoSort: true` to order them by `cost` automatically.
 2. **Fall through on failure.** On a retryable error (rate limit, 5xx, timeout) it advances to the next provider, streaming-safe.
 3. **Recover.** After an idle window (`resetIntervalMs`, default 60s) it snaps back to the cheapest provider.
 
 ## Roadmap
 
-- [ ] Real per-call cost accounting from a bundled price table
-- [ ] Auto cheapest-first ordering straight from the price table
+- [x] Own failover engine — cheapest-first routing + streaming-safe fallback, no external routing dependency
+- [x] Real per-call cost accounting (`onCost`)
+- [x] Auto cheapest-first ordering (`autoSort`) from per-provider `cost`
+- [ ] Bundled price table for zero-config pricing (drop the manual `cost` numbers)
 - [ ] Provider-quirk middleware (transparently patch known per-provider request quirks)
 - [ ] Offline capability probe (tool-calling / caching / streaming) → trust matrix
 - [ ] Image & video model routing (fal.ai / Runware / Kunavo)
@@ -138,6 +143,10 @@ npm test          # mocked routing/failover tests + live Kunavo tests
 ```
 
 The suite covers cheapest-first routing, failover on retryable errors (and *not* failing over on a 400), exhausting the whole chain, and a real broken-provider → Kunavo recovery. Live tests run only when `KUNAVO_API_KEY` is set in the environment; otherwise they're skipped.
+
+## Credits
+
+The streaming-safe failover approach is adapted from [`ai-fallback`](https://github.com/remorses/ai-fallback) (MIT) — reimplemented in-house so ai-lcr owns its engine and layers cost accounting + routing directly into it. Built on the [Vercel AI SDK](https://ai-sdk.dev).
 
 ## License
 

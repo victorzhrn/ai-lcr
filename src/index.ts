@@ -1,42 +1,75 @@
 /**
  * ai-lcr — Least Cost Routing for LLMs.
  *
- * v0 scope: cheapest-first routing across providers + streaming-safe failover
- * (delegated to `ai-fallback`). Per-call cost accounting (`onCost`), the
- * provider-quirk middleware layer, and the offline capability probe are typed
- * below but land in P1 — see the roadmap in README.md. This package is
- * dogfooded in production before a stable release; expect the API to move.
+ * Route each model to the cheapest provider that can serve it, fall back
+ * automatically on failure, and report real per-call cost. Built on its own
+ * failover engine (see ./fallback) — no external routing dependency.
+ *
+ * Roadmap (see README): provider-quirk middleware, offline capability probe,
+ * a bundled price table for zero-config cheapest-first ordering.
  */
 import type { LanguageModelV3 } from "@ai-sdk/provider";
-import { createFallback } from "ai-fallback";
+import {
+  LcrFallbackModel,
+  type CostEvent,
+  type ProviderCost,
+  type RoutedProvider,
+} from "./fallback";
 
-/** A single call's usage + computed cost, surfaced to `onCost`. Reserved — wired in P1. */
-export interface CostEvent {
-  model: string;
-  provider: string;
-  inputTokens: number;
-  outputTokens: number;
-  costUsd: number;
-}
+export type { CostEvent, ProviderCost } from "./fallback";
+
+/**
+ * A provider for a model: either a bare AI SDK model (e.g.
+ * `createOpenAICompatible(...)("id")`), or that model wrapped with price/label
+ * metadata to unlock cost accounting and cheapest-first auto-sorting.
+ */
+export type ProviderEntry =
+  | LanguageModelV3
+  | {
+      model: LanguageModelV3;
+      /** USD per 1M tokens. Enables `onCost` and `autoSort`. */
+      cost?: ProviderCost;
+      /** Label used in cost events / logs. Defaults to the model's provider id. */
+      label?: string;
+    };
 
 export interface LCRConfig {
   /**
    * Map of logical model name -> providers to try, cheapest-first.
-   * Each entry is a standard AI SDK model, e.g. from
-   * `createOpenAICompatible(...)("model-id")`. Order is priority order:
-   * the first provider that succeeds serves the request.
+   * Order is priority order unless `autoSort` is set.
    */
-  models: Record<string, LanguageModelV3[]>;
+  models: Record<string, ProviderEntry[]>;
+  /** Sort each model's providers cheapest-first by `cost` before routing. */
+  autoSort?: boolean;
   /** Idle window after which routing snaps back to the cheapest provider. Default 60s. */
   resetIntervalMs?: number;
   /** Called when a provider errors and routing falls through to the next. */
-  onError?: (error: Error, modelId: string) => void;
-  /** Reserved (P1): real per-call cost accounting from the bundled price table. */
+  onError?: (error: Error, provider: string) => void;
+  /** Called after each successful call with the serving provider, tokens, and cost. */
   onCost?: (event: CostEvent) => void;
 }
 
 /** Resolve a logical model name to a routed model. */
 export type LCRRouter = (modelName: string) => LanguageModelV3;
+
+function isLanguageModel(entry: ProviderEntry): entry is LanguageModelV3 {
+  return typeof (entry as LanguageModelV3).doGenerate === "function";
+}
+
+function normalize(entry: ProviderEntry): RoutedProvider {
+  if (isLanguageModel(entry)) {
+    return { model: entry, label: entry.provider };
+  }
+  return {
+    model: entry.model,
+    label: entry.label ?? entry.model.provider,
+    cost: entry.cost,
+  };
+}
+
+function priceKey(p: RoutedProvider): number {
+  return p.cost ? p.cost.input + p.cost.output : Number.POSITIVE_INFINITY;
+}
 
 /**
  * Build a Least Cost Router. Returns a function that resolves a logical model
@@ -44,20 +77,17 @@ export type LCRRouter = (modelName: string) => LanguageModelV3;
  * streamText, generateObject, tools, agents).
  */
 export function createLCR(config: LCRConfig): LCRRouter {
-  const { models, resetIntervalMs = 60_000, onError } = config;
+  const { models, autoSort = false, resetIntervalMs, onError, onCost } = config;
 
-  const routed = new Map<string, LanguageModelV3>();
-  for (const [name, providers] of Object.entries(models)) {
-    if (providers.length === 0) {
-      throw new Error(`ai-lcr: model "${name}" has no providers`);
+  const routed = new Map<string, LcrFallbackModel>();
+  for (const [name, entries] of Object.entries(models)) {
+    let providers = entries.map(normalize);
+    if (autoSort) {
+      providers = [...providers].sort((a, b) => priceKey(a) - priceKey(b));
     }
     routed.set(
       name,
-      createFallback({
-        models: providers,
-        modelResetInterval: resetIntervalMs,
-        onError,
-      }),
+      new LcrFallbackModel({ modelName: name, providers, resetIntervalMs, onError, onCost }),
     );
   }
 
