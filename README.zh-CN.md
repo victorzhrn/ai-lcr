@@ -88,29 +88,31 @@ const { text } = await generateText({
 
 单位为每 100 万 token 的美元价格，input / output。官方价格截至 2026-05——请向各 provider 核对当前价格。OpenRouter 直接透传列表价；Kunavo 在官方价基础上统一 8 折。TokenMart 折扣按模型不同（85 折–35 折），请在 [thetokenmart.ai](https://thetokenmart.ai) 核对当前价格。
 
-| 模型 | 官方价（in / out） | OpenRouter | [Kunavo](https://kunavo.com/?ref=victorimf) | 最便宜 |
-|---|---|---|---|---|
-| Gemini 3 Flash | $0.50 / $3.00 | 无折扣 | −30% | ⭐ Kunavo |
-| Gemini 3 Pro / 3.1 Pro | $2.00 / $12.00 | 无折扣 | −30% | ⭐ Kunavo |
-| Gemini 2.5 Pro | $1.25 / $10.00 | 无折扣 | −30% | ⭐ Kunavo |
-| Gemini 2.5 Flash | $0.30 / $2.50 | 无折扣 | −30% | ⭐ Kunavo |
-| Claude Sonnet 4.6 | $3.00 / $15.00 | 无折扣 | list 7 折，但 token ~5×⚠️ | ⭐ OpenRouter¹ |
-| Claude Haiku 4.5 | $1.00 / $5.00 | 无折扣 | list 7 折，但 token ~5×⚠️ | ⭐ OpenRouter¹ |
-| DeepSeek V4 | $0.43 / $0.87 | 无折扣 | 未提供 | ⭐ OpenRouter |
+| 模型 | 官方价（in / out） | OpenRouter | [Kunavo](https://kunavo.com/?ref=victorimf) | [TokenMart](https://thetokenmart.ai) | 最便宜 |
+|---|---|---|---|---|---|
+| Gemini 3 Flash | $0.50 / $3.00 | 无折扣 | −20% | — | ⭐ Kunavo |
+| Gemini 3 Pro / 3.1 Pro | $2.00 / $12.00 | 无折扣 | −20% | — | ⭐ Kunavo |
+| Gemini 2.5 Pro | $1.25 / $10.00 | 无折扣 | −20% | — | ⭐ Kunavo |
+| Gemini 2.5 Flash | $0.30 / $2.50 | 无折扣 | −20% | — | ⭐ Kunavo |
+| Claude Sonnet 4.6 | $3.00 / $15.00 | 无折扣 | list 8 折，但 token ~5×⚠️ | −15% → **$2.55 / $12.75** | ⭐ TokenMart² |
+| Claude Haiku 4.5 | $1.00 / $5.00 | 无折扣 | list 8 折，但 token ~5×⚠️ | — | ⭐ OpenRouter¹ |
+| DeepSeek V4 | $0.43 / $0.87 | 无折扣 | 未提供 | — | ⭐ OpenRouter |
 
 Kunavo 提供 Anthropic + Google。DeepSeek / OpenAI / Grok / Mistral 路由到 OpenRouter——一份配置即可混用全部。
 
-> **¹ list 价不等于有效价——用 [probe](#给-provider-做体检能力--成本探测) 验证。** 截至最近一次 probe（2026-05-27），Kunavo 的 **Claude** 路径上报的 `input_tokens` 比真实值高约 5×（同一段 prompt：OpenRouter 算 3,607 token，Kunavo 算 17,475）**且按膨胀后的数计费**——于是名义上的 7 折实际比 OpenRouter 原价还贵 3–5 倍。它还会往 Claude 请求里注入隐藏 system prompt（污染输出）、并忽略 `max_tokens`。**Kunavo 的 Gemini 路径是干净的**（token 计数在 ~1.1× 内吻合），所以 Gemini 仍然 ⭐ Kunavo。在 Kunavo 修复前，把 `claude-*` 路由到 OpenRouter——之后重跑 probe 确认。这正是为什么 `ai-lcr` 应按「实测行为」而非「标价」排序。
+> **¹ list 价不等于有效价——用 [probe](#给-provider-做体检能力--成本探测) 验证。** 截至最近一次 probe（2026-05-27），Kunavo 的 **Claude** 路径上报的 `input_tokens` 比真实值高约 5×（同一段 prompt：OpenRouter 算 3,607 token，Kunavo 算 17,475）**且按膨胀后的数计费**——于是名义上的 8 折实际比 OpenRouter 原价还贵约 4 倍。它还会往 Claude 请求里注入隐藏 system prompt（污染输出）、并忽略 `max_tokens`。**Kunavo 的 Gemini 路径是干净的**（token 计数在 ~1.1× 内吻合），所以 Gemini 仍然 ⭐ Kunavo。在 Kunavo 修复前，把 `claude-*` 路由到 TokenMart 或 OpenRouter——之后重跑 probe 确认。这正是为什么 `ai-lcr` 应按「实测行为」而非「标价」排序。
+
+> **² TokenMart token 计数经 probe 验证为干净**（后端与 Inference.ai 相同，2026-05-27 全项通过：工具调用、`max_tokens`、无注入、token ~1.0×、prompt 缓存）。list 价 −15%、token 计数干净，Claude 走 TokenMart 比 OpenRouter 更便宜。生产路由前请重新 probe 确认。
 
 ## 图像模型价格
 
-单位为每张图的美元价格，截至 2026-05（provider 列表价 / 零售价；请核对当前价格）。Kunavo 为官方价 7 折。fal 与 Runware 是算力 provider——`ai-lcr` 为每个模型挑选最便宜的那个（⭐）。
+单位为每张图的美元价格，截至 2026-05（provider 列表价 / 零售价；请核对当前价格）。Kunavo 为官方价 8 折。fal 与 Runware 是算力 provider——`ai-lcr` 为每个模型挑选最便宜的那个（⭐）。
 
 | 模型 | fal.ai | Runware | [Kunavo](https://kunavo.com/?ref=victorimf) | 最便宜 |
 |---|---|---|---|---|
-| Nano Banana 2 | $0.080 | $0.069 | $0.047 | ⭐ Kunavo |
-| Nano Banana Pro | $0.080 | — | $0.094 | ⭐ fal |
-| GPT-Image-2 | $0.210 | $0.094 | $0.089 | ⭐ Kunavo |
+| Nano Banana 2 | $0.080 | $0.069 | $0.054 | ⭐ Kunavo |
+| Nano Banana Pro | $0.080 | — | $0.107 | ⭐ fal |
+| GPT-Image-2 | $0.210 | $0.094 | $0.102 | ⭐ Runware |
 | Imagen 4 Ultra | $0.060 | $0.060 | — | ⭐ fal / Runware |
 | Ideogram V3 | $0.060 | $0.060 | — | ⭐ fal / Runware |
 | Seedream 4 | $0.030 | — | — | ⭐ fal |
@@ -156,6 +158,14 @@ API_KEY=$KUNAVO_API_KEY BASE=https://api.kunavo.com \
   CACHE_MODEL=claude-sonnet-4-6 \
   REF_API_KEY=$OPENROUTER_API_KEY REF_BASE=https://openrouter.ai/api \
   bash scripts/check-provider.sh
+
+# TokenMart 使用 vendor 前缀的模型 ID
+API_KEY=$TOKENMART_API_KEY BASE=https://api.tokenmart.ai \
+  MODEL_1=google/gemini-3-flash    REF_1=google/gemini-3-flash-preview \
+  MODEL_2=anthropic/claude-sonnet-4-6 REF_2=anthropic/claude-sonnet-4.6 \
+  CACHE_MODEL=anthropic/claude-sonnet-4-6 \
+  REF_API_KEY=$OPENROUTER_API_KEY REF_BASE=https://openrouter.ai/api \
+  bash scripts/check-provider.sh
 ```
 
 注入或 token 超计这两项 `FAIL`，意味着该 provider 对那个模型来说**不是**安全的最低成本目标——在它修好之前，别把它放进那个模型的「最便宜优先」列表，修好后重新探测。
@@ -164,7 +174,7 @@ API_KEY=$KUNAVO_API_KEY BASE=https://api.kunavo.com \
 
 两个 OpenAI 兼容 provider，同一脚本，同一天。单元格覆盖两个家族（G = Gemini，C = Claude）。
 
-| 检查项 | Kunavo | Inference.ai |
+| 检查项 | Kunavo | [TokenMart](https://thetokenmart.ai) |
 |---|---|---|
 | 工具调用（单次 + 多步 `content: null`） | G ⚠️ 间歇性¹ · C ✅ | ✅ 两者 |
 | token 计数 vs OpenRouter 基线 | G ✅ ~1.1–1.4× · C ❌ **~5×**（且按此计费） | ✅ 两者 ~1.0× |
@@ -175,7 +185,7 @@ API_KEY=$KUNAVO_API_KEY BASE=https://api.kunavo.com \
 ¹ Kunavo Gemini 一次返回干净的工具调用，下一次相同请求却**完全丢掉了 tools**——不是稳定通过。
 ² Kunavo Claude 一次对着幻觉中的"fake system prompt"作出反应，另一次又干净——注入是间歇性的，不是被移除了。
 
-**结论：** Inference.ai 在 Gemini 和 Claude 两条路上每一项都通过，且结果稳定可复现——可以放心路由。Kunavo：Gemini *大体*可用，但现在会间歇性丢工具调用、且忽略 `max_tokens`；Claude token 灌水 ~5×（且按此计费）+ 间歇性注入 system prompt——Claude 别走 Kunavo。Kunavo 更大的危险信号是**不确定性**：相同请求跨运行给出不同结果，这对生产路由比稳定失败更糟。在用任一 provider 跑新模型前都先重新探测。
+**结论：** TokenMart 在 Gemini 和 Claude 两条路上每一项都通过，且结果稳定可复现——可以放心路由。Kunavo：Gemini *大体*可用，但现在会间歇性丢工具调用、且忽略 `max_tokens`；Claude token 灌水 ~5×（且按此计费）+ 间歇性注入 system prompt——Claude 别走 Kunavo。Kunavo 更大的危险信号是**不确定性**：相同请求跨运行给出不同结果，这对生产路由比稳定失败更糟。在用任一 provider 跑新模型前都先重新探测。
 
 ## 路线图
 
@@ -190,7 +200,7 @@ API_KEY=$KUNAVO_API_KEY BASE=https://api.kunavo.com \
 
 ## 联盟（Affiliate）披露
 
-`ai-lcr` 是 provider 中立的，可与任何 OpenAI 兼容的 endpoint 配合使用。作者与 **[Kunavo](https://kunavo.com/?ref=victorimf)** 之间存在联盟（affiliate）关系——在官方价 7 折的情况下，它往往（但并非总是）是最便宜的选项，正如上面的表格所示。通过该链接注册可能会让作者获得一份分成。你完全不必使用它；自带 provider，路由功能照常工作。
+`ai-lcr` 是 provider 中立的，可与任何 OpenAI 兼容的 endpoint 配合使用。作者与 **[Kunavo](https://kunavo.com/?ref=victorimf)** 之间存在联盟（affiliate）关系——在官方价 8 折的情况下，它往往（但并非总是）是最便宜的选项，正如上面的表格所示。通过该链接注册可能会让作者获得一份分成。你完全不必使用它；自带 provider，路由功能照常工作。
 
 ## 开发
 
