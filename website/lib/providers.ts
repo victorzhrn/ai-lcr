@@ -64,14 +64,50 @@ export const PROVIDERS: Provider[] = [
     base: "https://api.kunavo.com",
     apiKeyEnv: "KUNAVO_API_KEY",
     check: "inference",
-    models: [{ id: "gemini-2-5-flash" }, { id: "claude-haiku-4-5" }],
+    // Kunavo carries Anthropic + Google only.
+    models: [
+      { id: "gemini-2-5-flash" },
+      { id: "gemini-2-5-pro" },
+      { id: "claude-haiku-4-5" },
+      { id: "claude-sonnet-4-6" },
+      { id: "claude-opus-4-7" },
+    ],
     link: "https://kunavo.com/?ref=victorimf",
     integrity: {
       refBase: "https://openrouter.ai/api",
       refApiKeyEnv: "OPENROUTER_API_KEY",
+      // One Gemini + one Claude representative; caching tested once (the Claude one).
       models: [
         { id: "gemini-2-5-flash", ref: "google/gemini-2.5-flash" },
         { id: "claude-haiku-4-5", ref: "anthropic/claude-haiku-4.5", anthropicNative: true },
+      ],
+    },
+  },
+  {
+    id: "tokenmart",
+    label: "TokenMart",
+    base: "https://model.service-inference.ai",
+    apiKeyEnv: "INFERENCE_API_KEY",
+    check: "inference",
+    // Mainstream models this key can actually serve. TokenMart lists GPT /
+    // DeepSeek / Qwen in /v1/models, but inference on them returns HTTP 502
+    // "Upstream authentication error" (ERR_PROVIDER_005) — those upstreams
+    // aren't provisioned on this account, so we don't monitor them as "down".
+    models: [
+      { id: "claude-sonnet-4-6" },
+      { id: "claude-opus-4-7" },
+      { id: "claude-haiku-4-5-20251001" },
+      { id: "gemini-3-flash-preview" },
+      { id: "gemini-2.5-pro" },
+      { id: "glm-4.6" },
+    ],
+    link: "https://thetokenmart.ai",
+    integrity: {
+      refBase: "https://openrouter.ai/api",
+      refApiKeyEnv: "OPENROUTER_API_KEY",
+      models: [
+        { id: "gemini-2.5-pro", ref: "google/gemini-2.5-pro" },
+        { id: "claude-sonnet-4-6", ref: "anthropic/claude-sonnet-4.6", anthropicNative: true },
       ],
     },
   },

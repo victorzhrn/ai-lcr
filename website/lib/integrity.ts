@@ -45,6 +45,11 @@ const NEUTRAL =
 
 const INJECTION_RE = /injection|system prompt|confidential|hidden prompt|xml tag/i;
 
+function errMsg(e: unknown): string {
+  const err = e as Error;
+  return err?.name === "AbortError" ? `timeout (${CALL_TIMEOUT_MS / 1000}s)` : err?.message ?? String(e);
+}
+
 type ChatResp = { ok: boolean; status: number; json: unknown; text: string };
 
 async function postJson(url: string, headers: Record<string, string>, body: unknown): Promise<ChatResp> {
@@ -111,7 +116,7 @@ async function toolChecks(provider: string, base: string, key: string, model: st
       max_tokens: 300,
     });
   } catch (e) {
-    out.push(mk("tool_call", "fail", (e as Error).message));
+    out.push(mk("tool_call", "fail", errMsg(e)));
     out.push(mk("multi_step", "skip", "tool_call step errored"));
     return out;
   }
@@ -156,7 +161,7 @@ async function toolChecks(provider: string, base: string, key: string, model: st
       ),
     );
   } catch (e) {
-    out.push(mk("multi_step", "fail", (e as Error).message));
+    out.push(mk("multi_step", "fail", errMsg(e)));
   }
   return out;
 }
@@ -178,7 +183,7 @@ async function maxTokensCheck(provider: string, base: string, key: string, model
       detail: `completion_tokens=${ct ?? "?"} for cap 8`,
     };
   } catch (e) {
-    return { provider, model, check_name: "max_tokens", status: "fail", detail: (e as Error).message };
+    return { provider, model, check_name: "max_tokens", status: "fail", detail: errMsg(e) };
   }
 }
 
@@ -199,7 +204,7 @@ async function injectionCheck(provider: string, base: string, key: string, model
       detail: bad ? `model reacted to content it was never sent: "${content.slice(0, 140)}…"` : null,
     };
   } catch (e) {
-    return { provider, model, check_name: "injection", status: "fail", detail: (e as Error).message };
+    return { provider, model, check_name: "injection", status: "fail", detail: errMsg(e) };
   }
 }
 
@@ -268,7 +273,7 @@ async function cachingCheck(provider: string, base: string, key: string, model: 
       detail: `cache_read_input_tokens=${cr}${ok ? "" : " across 4 identical calls"}`,
     };
   } catch (e) {
-    return { provider, model, check_name: "caching", status: "fail", detail: (e as Error).message };
+    return { provider, model, check_name: "caching", status: "fail", detail: errMsg(e) };
   }
 }
 
