@@ -5,14 +5,79 @@
 </p>
 
 <p align="center">
+  <b>LLM 调用的自动最低成本路由。一行代码，降低 AI 账单。</b>
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/ai-lcr"><img src="https://img.shields.io/npm/v/ai-lcr.svg" alt="npm version"/></a>
+  <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"/>
+  <a href="https://ai-sdk.dev"><img src="https://img.shields.io/badge/built%20for-Vercel%20AI%20SDK-black?logo=vercel&logoColor=white" alt="built for Vercel AI SDK"/></a>
+</p>
+
+<p align="center">
   <img src="assets/ai-lcr-hero.svg" alt="ai-lcr 把每个模型路由到各自最便宜的 provider——Gemini 走 Kunavo，DeepSeek 走 OpenRouter，Seedream 走 fal，Flux Schnell 走 Runware——失败时自动 fallback" width="820">
 </p>
 
-**面向 LLM 的最低成本路由（Least Cost Routing）。** 把每个模型路由到能服务它的最便宜 provider，某个 provider 失败时自动 fallback。为 [Vercel AI SDK](https://ai-sdk.dev) 而构建。
+同一个模型在不同 provider 上的价格不同——而且没有任何单一 provider 在所有模型上都最便宜。`ai-lcr` 为每个模型维护一份「最便宜优先」的列表，路由到其中最便宜且健康的 provider（下表中的 ⭐），失败时向下穿透——这正是电话运营商几十年来一直在做的 [最低成本路由（Least Cost Routing）](https://en.wikipedia.org/wiki/Least-cost_routing)。
 
 > 🚧 早期开发阶段——API 可能变化。稳定版发布前会先在生产环境 dogfood。
 
-同一个模型在不同 provider 上的价格不同——而对于图像模型，没有任何单一 provider 在所有模型上都最便宜。`ai-lcr` 为每个模型维护一份「最便宜优先」的列表，路由到其中最便宜且健康的 provider（下表中的 ⭐），失败时向下穿透——这正是电话运营商几十年来一直在做的 [最低成本路由（Least Cost Routing）](https://en.wikipedia.org/wiki/Least-cost_routing)。
+## 安装
+
+```bash
+npm install ai-lcr
+```
+
+`ai`（Vercel AI SDK）是 peer dependency。
+
+## 快速开始
+
+```ts
+import { createLCR } from "ai-lcr";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { generateText } from "ai";
+
+const kunavo = createOpenAICompatible({
+  name: "kunavo",
+  baseURL: "https://api.kunavo.com/v1",
+  apiKey: process.env.KUNAVO_API_KEY,
+});
+const openrouter = createOpenAICompatible({
+  name: "openrouter",
+  baseURL: "https://openrouter.ai/api/v1",
+  apiKey: process.env.OPENROUTER_API_KEY,
+});
+
+const lcr = createLCR({
+  autoSort: true, // 按 `cost` 把每个模型的 provider 排成最便宜优先
+  models: {
+    // 一个逻辑模型，跨多个 provider 最便宜优先地提供服务。
+    "gemini-3-flash": [
+      { model: kunavo("gemini-3-flash"), label: "kunavo", cost: { input: 0.35, output: 2.1 } },
+      { model: openrouter("google/gemini-3-flash-preview"), label: "openrouter", cost: { input: 0.5, output: 3.0 } },
+    ],
+  },
+  // 看清每次调用的实际花费，以及由哪个 provider 提供。
+  onCost: ({ provider, costUsd }) => console.log(`${provider}: $${costUsd.toFixed(6)}`),
+});
+
+const { text } = await generateText({
+  model: lcr("gemini-3-flash"),
+  prompt: "Explain Least Cost Routing in one sentence.",
+});
+```
+
+`cost` 和 `label` 都是可选的——如果你不需要成本核算或 `autoSort`，可以直接传裸模型（`kunavo("gemini-3-flash")`）。`lcr("gemini-3-flash")` 返回一个标准的 AI SDK 模型，因此可与 `generateText`、`streamText`、`generateObject`、工具调用和 agent 一起使用。
+
+## 它如何路由
+
+1. **最便宜优先。** provider 按顺序依次尝试——把它们排成最便宜优先，或设置 `autoSort: true` 让它按 `cost` 自动排序。
+2. **失败时向下穿透。** 遇到可重试的错误（限流、5xx、超时）时，前进到下一个 provider，且对流式安全。硬错误（400、401、403、422）会直接透传，不做重试。
+3. **恢复。** 在一段空闲窗口（`resetIntervalMs`，默认 60s）之后，自动回到最便宜的 provider。
+
+<p align="center">
+  <img src="assets/ai-lcr-routing.svg" alt="路由示意图：最便宜优先、失败时 fallback、空闲后恢复" width="820">
+</p>
 
 ## 支持的 provider
 
@@ -70,59 +135,6 @@ Kunavo 提供 Anthropic + Google。DeepSeek / OpenAI / Grok / Mistral 路由到 
 | Kling V3 Pro | $0.112 |
 | Seedance Pro | $0.124 |
 | Veo 3.1（audio-on） | $0.400 |
-
-## 安装
-
-```bash
-npm install ai-lcr
-```
-
-`ai`（Vercel AI SDK）是 peer dependency。
-
-## 快速开始
-
-```ts
-import { createLCR } from "ai-lcr";
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { generateText } from "ai";
-
-const kunavo = createOpenAICompatible({
-  name: "kunavo",
-  baseURL: "https://api.kunavo.com/v1",
-  apiKey: process.env.KUNAVO_API_KEY,
-});
-const openrouter = createOpenAICompatible({
-  name: "openrouter",
-  baseURL: "https://openrouter.ai/api/v1",
-  apiKey: process.env.OPENROUTER_API_KEY,
-});
-
-const lcr = createLCR({
-  autoSort: true, // 按 `cost` 把每个模型的 provider 排成最便宜优先
-  models: {
-    // 一个逻辑模型，跨多个 provider 最便宜优先地提供服务。
-    "gemini-3-flash": [
-      { model: kunavo("gemini-3-flash"), label: "kunavo", cost: { input: 0.35, output: 2.1 } },
-      { model: openrouter("google/gemini-3-flash-preview"), label: "openrouter", cost: { input: 0.5, output: 3.0 } },
-    ],
-  },
-  // 看清每次调用的实际花费，以及由哪个 provider 提供。
-  onCost: ({ provider, costUsd }) => console.log(`${provider}: $${costUsd.toFixed(6)}`),
-});
-
-const { text } = await generateText({
-  model: lcr("gemini-3-flash"),
-  prompt: "Explain Least Cost Routing in one sentence.",
-});
-```
-
-`cost` 和 `label` 都是可选的——如果你不需要成本核算或 `autoSort`，可以直接传裸模型（`kunavo("gemini-3-flash")`）。`lcr("gemini-3-flash")` 返回一个标准的 AI SDK 模型，因此可与 `generateText`、`streamText`、`generateObject`、工具调用和 agent 一起使用。
-
-## 它如何路由
-
-1. **最便宜优先。** provider 按顺序依次尝试——把它们排成最便宜优先，或设置 `autoSort: true` 让它按 `cost` 自动排序。
-2. **失败时向下穿透。** 遇到可重试的错误（限流、5xx、超时）时，前进到下一个 provider，且对流式安全。
-3. **恢复。** 在一段空闲窗口（`resetIntervalMs`，默认 60s）之后，自动回到最便宜的 provider。
 
 ## 路线图
 

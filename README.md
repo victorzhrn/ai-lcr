@@ -5,14 +5,79 @@
 </p>
 
 <p align="center">
+  <b>Automatic least-cost routing for LLM calls. One line to cut your AI bill.</b>
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/ai-lcr"><img src="https://img.shields.io/npm/v/ai-lcr.svg" alt="npm version"/></a>
+  <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"/>
+  <a href="https://ai-sdk.dev"><img src="https://img.shields.io/badge/built%20for-Vercel%20AI%20SDK-black?logo=vercel&logoColor=white" alt="built for Vercel AI SDK"/></a>
+</p>
+
+<p align="center">
   <img src="assets/ai-lcr-hero.svg" alt="ai-lcr routes each model to its own cheapest provider — Gemini to Kunavo, DeepSeek to OpenRouter, Seedream to fal, Flux Schnell to Runware — and falls back on failure" width="820">
 </p>
 
-**Least Cost Routing for LLMs.** Route each model to the cheapest provider that can serve it, and fall back automatically when one fails. Built for the [Vercel AI SDK](https://ai-sdk.dev).
+The same model costs different amounts on different providers — and no single provider is cheapest for everything. `ai-lcr` keeps a cheapest-first list per model, routes to the cheapest healthy one (⭐ below), and falls through on failure — the way phone carriers have done [Least Cost Routing](https://en.wikipedia.org/wiki/Least-cost_routing) for decades.
 
 > 🚧 Early development — the API may change. Dogfooded in production before a stable release.
 
-The same model costs different amounts on different providers — and for images, no single provider is cheapest for everything. `ai-lcr` keeps a cheapest-first list per model, routes to the cheapest healthy one (⭐ below), and falls through on failure — the way phone carriers have done [Least Cost Routing](https://en.wikipedia.org/wiki/Least-cost_routing) for decades.
+## Install
+
+```bash
+npm install ai-lcr
+```
+
+`ai` (the Vercel AI SDK) is a peer dependency.
+
+## Quick start
+
+```ts
+import { createLCR } from "ai-lcr";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { generateText } from "ai";
+
+const kunavo = createOpenAICompatible({
+  name: "kunavo",
+  baseURL: "https://api.kunavo.com/v1",
+  apiKey: process.env.KUNAVO_API_KEY,
+});
+const openrouter = createOpenAICompatible({
+  name: "openrouter",
+  baseURL: "https://openrouter.ai/api/v1",
+  apiKey: process.env.OPENROUTER_API_KEY,
+});
+
+const lcr = createLCR({
+  autoSort: true, // sort each model's providers cheapest-first by `cost`
+  models: {
+    // One logical model, served cheapest-first across providers.
+    "gemini-3-flash": [
+      { model: kunavo("gemini-3-flash"), label: "kunavo", cost: { input: 0.35, output: 2.1 } },
+      { model: openrouter("google/gemini-3-flash-preview"), label: "openrouter", cost: { input: 0.5, output: 3.0 } },
+    ],
+  },
+  // See exactly what each call cost, on whichever provider served it.
+  onCost: ({ provider, costUsd }) => console.log(`${provider}: $${costUsd.toFixed(6)}`),
+});
+
+const { text } = await generateText({
+  model: lcr("gemini-3-flash"),
+  prompt: "Explain Least Cost Routing in one sentence.",
+});
+```
+
+`cost` and `label` are optional — pass bare models (`kunavo("gemini-3-flash")`) if you don't need cost accounting or `autoSort`. `lcr("gemini-3-flash")` returns a standard AI SDK model, so it works with `generateText`, `streamText`, `generateObject`, tools, and agents.
+
+## How it routes
+
+1. **Cheapest first.** Providers are tried in order — list them cheapest-first, or set `autoSort: true` to order them by `cost` automatically.
+2. **Fall through on failure.** On a retryable error (rate limit, 5xx, timeout) it advances to the next provider, streaming-safe. Hard errors (400, 401, 403, 422) pass through immediately.
+3. **Recover.** After an idle window (`resetIntervalMs`, default 60s) it snaps back to the cheapest provider.
+
+<p align="center">
+  <img src="assets/ai-lcr-routing.svg" alt="routing diagram: cheapest first, fallback on failure, recover after idle" width="820">
+</p>
 
 ## Supported providers
 
@@ -70,59 +135,6 @@ USD per second, as of 2026-05 — verify current rates. Video billing differs by
 | Kling V3 Pro | $0.112 |
 | Seedance Pro | $0.124 |
 | Veo 3.1 (audio-on) | $0.400 |
-
-## Install
-
-```bash
-npm install ai-lcr
-```
-
-`ai` (the Vercel AI SDK) is a peer dependency.
-
-## Quick start
-
-```ts
-import { createLCR } from "ai-lcr";
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { generateText } from "ai";
-
-const kunavo = createOpenAICompatible({
-  name: "kunavo",
-  baseURL: "https://api.kunavo.com/v1",
-  apiKey: process.env.KUNAVO_API_KEY,
-});
-const openrouter = createOpenAICompatible({
-  name: "openrouter",
-  baseURL: "https://openrouter.ai/api/v1",
-  apiKey: process.env.OPENROUTER_API_KEY,
-});
-
-const lcr = createLCR({
-  autoSort: true, // sort each model's providers cheapest-first by `cost`
-  models: {
-    // One logical model, served cheapest-first across providers.
-    "gemini-3-flash": [
-      { model: kunavo("gemini-3-flash"), label: "kunavo", cost: { input: 0.35, output: 2.1 } },
-      { model: openrouter("google/gemini-3-flash-preview"), label: "openrouter", cost: { input: 0.5, output: 3.0 } },
-    ],
-  },
-  // See exactly what each call cost, on whichever provider served it.
-  onCost: ({ provider, costUsd }) => console.log(`${provider}: $${costUsd.toFixed(6)}`),
-});
-
-const { text } = await generateText({
-  model: lcr("gemini-3-flash"),
-  prompt: "Explain Least Cost Routing in one sentence.",
-});
-```
-
-`cost` and `label` are optional — pass bare models (`kunavo("gemini-3-flash")`) if you don't need cost accounting or `autoSort`. `lcr("gemini-3-flash")` returns a standard AI SDK model, so it works with `generateText`, `streamText`, `generateObject`, tools, and agents.
-
-## How it routes
-
-1. **Cheapest first.** Providers are tried in order — list them cheapest-first, or set `autoSort: true` to order them by `cost` automatically.
-2. **Fall through on failure.** On a retryable error (rate limit, 5xx, timeout) it advances to the next provider, streaming-safe.
-3. **Recover.** After an idle window (`resetIntervalMs`, default 60s) it snaps back to the cheapest provider.
 
 ## Roadmap
 
