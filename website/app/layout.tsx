@@ -52,7 +52,12 @@ export default function RootLayout({
       lang="en"
       className={`${display.variable} ${mono.variable} ${body.variable}`}
     >
-      <PlausibleProvider scriptProps={{ "data-domain": "ailcr.js.org" }}>
+      <PlausibleProvider
+        domain="ailcr.js.org"
+        customDomain="https://plausible.ideamarketfit.com"
+        trackOutboundLinks
+        selfHosted
+      >
         <body>{children}</body>
       </PlausibleProvider>
     </html>

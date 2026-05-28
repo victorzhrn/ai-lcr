@@ -12,5 +12,5 @@ const nextConfig: NextConfig = {
 };
 
 export default withPlausibleProxy({
-  src: "https://plausible.ideamarketfit.com/js/script.js",
+  customDomain: "https://plausible.ideamarketfit.com",
 })(nextConfig);
