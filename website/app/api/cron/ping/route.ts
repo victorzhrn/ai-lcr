@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getPool } from "@/lib/db9";
-import { PROVIDERS, type Provider } from "@/lib/providers";
+import { PROVIDERS, REACHABILITY_MODEL, type Provider } from "@/lib/providers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,14 +16,14 @@ type PingResult = {
   error: string | null;
 };
 
-// A heartbeat. Strategy depends on p.check:
+// One liveness heartbeat. For "reachable" providers, `model` is the sentinel
+// REACHABILITY_MODEL; for "inference" providers it's a real model id.
 //  - "inference": a real max_tokens:1 completion — proves the inference path
 //    works (not just the gateway). For discount / quirky providers.
 //  - "reachable": a free GET /v1/models — endpoint + auth reachable, 0 tokens.
-//    For trusted aggregators where "is it up" is all we need.
-async function ping(p: Provider): Promise<PingResult> {
+async function ping(p: Provider, model: string): Promise<PingResult> {
   const key = process.env[p.apiKeyEnv];
-  const base = { provider: p.id, model: p.model };
+  const base = { provider: p.id, model };
   if (!key) {
     return { ...base, ok: false, latency_ms: null, error: `missing env ${p.apiKeyEnv}` };
   }
@@ -46,7 +46,7 @@ async function ping(p: Provider): Promise<PingResult> {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              model: p.model,
+              model,
               messages: [{ role: "user", content: "hi" }],
               max_tokens: 1,
             }),
@@ -78,17 +78,31 @@ async function ping(p: Provider): Promise<PingResult> {
   }
 }
 
+// Flatten providers into individual (provider, model) liveness checks.
+// "reachable" providers contribute one reachability check; "inference"
+// providers contribute one check per listed model.
+function pingTasks(): Array<Promise<PingResult>> {
+  const tasks: Array<Promise<PingResult>> = [];
+  for (const p of PROVIDERS) {
+    if (p.check === "reachable" || p.models.length === 0) {
+      tasks.push(ping(p, REACHABILITY_MODEL));
+    } else {
+      for (const m of p.models) tasks.push(ping(p, m.id));
+    }
+  }
+  return tasks;
+}
+
 async function runChecks() {
-  const results = await Promise.all(PROVIDERS.map(ping));
+  const results = await Promise.all(pingTasks());
 
   const pool = getPool();
-  const cols = results.length;
   const placeholders = results
     .map((_, i) => `($${i * 5 + 1},$${i * 5 + 2},$${i * 5 + 3},$${i * 5 + 4},$${i * 5 + 5})`)
     .join(",");
   const params = results.flatMap((r) => [r.provider, r.model, r.ok, r.latency_ms, r.error]);
 
-  if (cols > 0) {
+  if (results.length > 0) {
     await pool.query(
       `INSERT INTO provider_pings (provider, model, ok, latency_ms, error) VALUES ${placeholders}`,
       params,

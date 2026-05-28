@@ -6,12 +6,19 @@
   "functions": {
     "app/api/cron/ping/route.ts": {
       "maxDuration": 30
+    },
+    "app/api/cron/integrity/route.ts": {
+      "maxDuration": 300
     }
   },
   "crons": [
     {
       "path": "/api/cron/ping",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/integrity",
+      "schedule": "17 8 * * *"
     }
   ]
 }
