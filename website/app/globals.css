@@ -533,34 +533,255 @@ a {
 }
 
 /* ───────────────────────── stats ───────────────────────── */
-.stats {
+.features {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 14px;
   margin: clamp(44px, 7vh, 80px) auto 0;
 }
 
-.stat {
+.feature {
+  display: block;
   border: 1px solid var(--line);
-  border-left: 2px solid var(--accent, var(--green));
-  border-radius: 12px;
-  padding: 20px 18px;
+  border-radius: 14px;
+  padding: 22px 20px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+a.feature:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  transform: translateY(-2px);
 }
 
-.stat .num {
+.feature__ic {
+  display: inline-flex;
+  width: 38px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.feature__ic svg {
+  width: 20px;
+  height: 20px;
+}
+
+.feature__title {
+  margin-top: 14px;
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 30px;
-  letter-spacing: -0.02em;
+  font-size: 18px;
+  letter-spacing: -0.01em;
   color: var(--text);
 }
 
-.stat .lbl {
+.feature__desc {
   margin-top: 6px;
   font-size: 13px;
-  line-height: 1.45;
+  line-height: 1.5;
   color: var(--muted);
+}
+
+/* ── live provider status strip ── */
+.statusbar {
+  margin: 30px auto 0;
+  max-width: 900px;
+  border: 1px solid var(--line-2);
+  border-radius: 16px;
+  background: linear-gradient(180deg, var(--panel-2), var(--bg-2));
+  padding: 16px 18px 18px;
+}
+
+.statusbar__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+.statusbar__pulse {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+.statusbar__pulse.is-up {
+  background: var(--green);
+  box-shadow: 0 0 10px var(--green);
+  animation: pulseDot 2.4s ease-in-out infinite;
+}
+.statusbar__pulse.is-down {
+  background: var(--amber);
+}
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+.statusbar__state {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text);
+}
+.statusbar__all {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--muted);
+  text-decoration: none;
+}
+.statusbar__all:hover {
+  color: var(--green);
+}
+
+.statusbar__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.pcard {
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--panel);
+  padding: 13px 14px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease;
+}
+.pcard:hover {
+  border-color: var(--line-2);
+}
+.pcard__top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pcard__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+.pcard__dot.is-up {
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+}
+.pcard__dot.is-down {
+  background: var(--red);
+}
+.pcard__dot.is-unknown {
+  background: var(--faint);
+}
+.pcard__name {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text);
+}
+.pcard__integ {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  border-radius: 999px;
+  padding: 2px 7px;
+  border: 1px solid var(--line);
+}
+.pcard__integ.is-pass {
+  color: var(--green);
+}
+.pcard__integ.is-warn {
+  color: var(--amber);
+}
+.pcard__meta {
+  margin-top: 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+.pcard__uptime {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.pcard__mode {
+  color: var(--faint);
+}
+
+/* ── FAQ ── */
+.faq {
+  margin: 30px auto 0;
+  max-width: 760px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.faq__item {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  padding: 0 18px;
+  transition: border-color 0.15s ease;
+}
+.faq__item[open] {
+  border-color: var(--line-2);
+}
+.faq__q {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 0;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 600;
+  font-size: 15.5px;
+  color: var(--text);
+}
+.faq__q::-webkit-details-marker {
+  display: none;
+}
+.faq__mark {
+  position: relative;
+  width: 13px;
+  height: 13px;
+  flex: none;
+}
+.faq__mark::before,
+.faq__mark::after {
+  content: "";
+  position: absolute;
+  background: var(--green);
+  border-radius: 2px;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+.faq__mark::before {
+  top: 5.5px;
+  left: 0;
+  width: 13px;
+  height: 2px;
+}
+.faq__mark::after {
+  left: 5.5px;
+  top: 0;
+  width: 2px;
+  height: 13px;
+}
+.faq__item[open] .faq__mark::after {
+  transform: rotate(90deg);
+  opacity: 0;
+}
+.faq__a {
+  margin: 0;
+  padding: 0 0 18px;
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--muted);
+  max-width: 68ch;
 }
 
 /* ───────────────────────── content blocks ───────────────────────── */
@@ -735,9 +956,16 @@ a {
   border-color: var(--green);
 }
 .sel__val {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.sel__val svg {
+  flex: none;
+  opacity: 0.85;
 }
 .sel__caret {
   width: 15px;
@@ -942,6 +1170,108 @@ a {
   color: var(--muted);
 }
 
+/* ───────────────────────── prices filter bar ───────────────────────── */
+.pf {
+  margin-bottom: 22px;
+  padding: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  border: 1px solid var(--line-2);
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+/* segmented modality control */
+.seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line-2);
+  border-radius: 11px;
+  background: var(--bg-2);
+}
+.seg button {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 15px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.seg button:hover {
+  color: var(--text);
+}
+.seg button[aria-pressed="true"] {
+  background: var(--green);
+  color: #042015;
+}
+
+/* search field */
+.pf__search {
+  flex: 1 1 240px;
+  min-width: 200px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 14px;
+  border: 1px solid var(--line-2);
+  border-radius: 11px;
+  background: var(--panel);
+  transition: border-color 0.15s ease;
+}
+.pf__search:focus-within {
+  border-color: var(--green);
+}
+.pf__search svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--faint);
+}
+.pf__search input {
+  flex: 1;
+  min-width: 0;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  padding: 11px 0;
+}
+
+/* inline custom-select tweaks inside the filter bar */
+.pf .sel {
+  width: auto;
+}
+.pf .sel__btn {
+  width: auto;
+  gap: 8px;
+  padding: 9px 13px;
+  font-size: 13px;
+  border-radius: 11px;
+}
+/* let the dropdown grow past the (narrow) button so vendor names don't clip */
+.pf .sel__list {
+  right: auto;
+  min-width: 200px;
+}
+
+/* vendor mark inside table rows */
+.vmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 /* ───────────────────────── footer ───────────────────────── */
 /* ───────────────────────── closing CTA ───────────────────────── */
 .finale {
@@ -1125,7 +1455,10 @@ a {
 
 /* ───────────────────────── responsive ───────────────────────── */
 @media (max-width: 860px) {
-  .stats {
+  .features {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .statusbar__grid {
     grid-template-columns: repeat(2, 1fr);
   }
   .checks {
@@ -1142,7 +1475,10 @@ a {
 }
 
 @media (max-width: 520px) {
-  .stats {
+  .features {
+    grid-template-columns: 1fr;
+  }
+  .statusbar__grid {
     grid-template-columns: 1fr;
   }
   .checks {

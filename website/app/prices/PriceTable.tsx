@@ -9,16 +9,16 @@ import {
   providerLabel,
   textProviderLabel,
 } from "@/lib/prices";
+import Select from "@/app/components/Select";
+import VendorIcon, { hasVendorIcon } from "@/app/components/VendorIcon";
 
 type Column = { id: string; label: string; link?: string };
 
 type ModalityFilter = "all" | "text" | "image" | "video";
 type LicenseFilter = "all" | License;
-type SortKey = "best" | "name";
 
 const C = {
   green: "var(--green)",
-  blue: "var(--blue)",
   text: "var(--text)",
   muted: "var(--muted)",
   faint: "var(--faint)",
@@ -34,9 +34,6 @@ function fmtCents(c: number | undefined): string {
 function fmtUsd(n: number): string {
   return `$${parseFloat(n.toFixed(2))}`;
 }
-
-// Quick-filter chips for the major model makers, shared with the vendor <select>.
-const QUICK_VENDORS = ["openai", "anthropic", "google"];
 
 const LICENSE_CHIP: Record<License, { label: string; color: string }> = {
   open: { label: "open weights", color: "var(--green)" },
@@ -93,7 +90,6 @@ export default function PriceTable({
   const [license, setLicense] = useState<LicenseFilter>("all");
   const [vendor, setVendor] = useState<string>("all");
   const [q, setQ] = useState("");
-  const [sort, setSort] = useState<SortKey>("best");
 
   const vendors = useMemo(() => {
     const set = new Map<string, string>();
@@ -119,15 +115,14 @@ export default function PriceTable({
   const filteredText = useMemo(() => {
     if (!showText) return [];
     const out = textRows.filter(matchCommon);
-    out.sort((a, b) =>
-      sort === "name"
-        ? a.name.localeCompare(b.name)
-        : (a.byProvider[a.cheapestProvider]?.blended ?? 0) -
-          (b.byProvider[b.cheapestProvider]?.blended ?? 0),
+    out.sort(
+      (a, b) =>
+        (a.byProvider[a.cheapestProvider]?.blended ?? 0) -
+        (b.byProvider[b.cheapestProvider]?.blended ?? 0),
     );
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [textRows, showText, license, vendor, needle, sort]);
+  }, [textRows, showText, license, vendor, needle]);
 
   const filteredMedia = useMemo(() => {
     if (!showMedia) return [];
@@ -136,37 +131,22 @@ export default function PriceTable({
       if (modality === "video" && r.modality !== "video") return false;
       return matchCommon(r);
     });
-    out.sort((a, b) =>
-      sort === "name" ? a.name.localeCompare(b.name) : a.cheapestCents - b.cheapestCents,
-    );
+    out.sort((a, b) => a.cheapestCents - b.cheapestCents);
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, showMedia, modality, license, vendor, needle, sort]);
+  }, [rows, showMedia, modality, license, vendor, needle]);
 
-  const totalShown = filteredText.length + filteredMedia.length;
-  const totalAll = rows.length + textRows.length;
-
-  const tab = (active: boolean): React.CSSProperties => ({
-    fontSize: 13,
-    fontWeight: 600,
-    padding: "6px 14px",
-    borderRadius: 999,
-    border: `1px solid ${active ? "transparent" : C.line}`,
-    background: active ? C.text : "transparent",
-    color: active ? "var(--bg, #0a0a0a)" : C.muted,
-    cursor: "pointer",
-  });
-
-  const chip = (active: boolean, color: string): React.CSSProperties => ({
-    fontSize: 12.5,
-    fontWeight: 600,
-    padding: "6px 12px",
-    borderRadius: 999,
-    border: `1px solid ${active ? color : C.line}`,
-    background: active ? `color-mix(in srgb, ${color} 16%, transparent)` : "transparent",
-    color: active ? color : C.muted,
-    cursor: "pointer",
-  });
+  const vendorOptions = useMemo(
+    () => [
+      { value: "all", label: "All vendors" },
+      ...vendors.map(([id, label]) => ({
+        value: id,
+        label,
+        icon: hasVendorIcon(id) ? <VendorIcon id={id} /> : undefined,
+      })),
+    ],
+    [vendors],
+  );
 
   const sectionTitle: React.CSSProperties = {
     fontSize: 13,
@@ -180,93 +160,51 @@ export default function PriceTable({
   return (
     <div>
       {/* ── Controls ─────────────────────────────────────────── */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 18 }}>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-          <div style={{ display: "flex", gap: 6 }}>
-            {(["all", "text", "image", "video"] as ModalityFilter[]).map((m) => (
-              <button key={m} type="button" style={tab(modality === m)} onClick={() => setModality(m)}>
-                {m === "all" ? "All" : m === "text" ? "Text" : m === "image" ? "Image" : "Video"}
-              </button>
-            ))}
-          </div>
-          <span style={{ width: 1, height: 22, background: C.line, margin: "0 4px" }} />
-          <button type="button" style={chip(license === "open", LICENSE_CHIP.open.color)} onClick={() => setLicense(license === "open" ? "all" : "open")}>
-            open weights
-          </button>
-          <button type="button" style={chip(license === "proprietary", LICENSE_CHIP.proprietary.color)} onClick={() => setLicense(license === "proprietary" ? "all" : "proprietary")}>
-            proprietary
-          </button>
-          <span style={{ width: 1, height: 22, background: C.line, margin: "0 4px" }} />
-          {QUICK_VENDORS.map((id) => (
+      <div className="pf">
+        <div className="seg" role="group" aria-label="Modality">
+          {(["all", "text", "image", "video"] as ModalityFilter[]).map((m) => (
             <button
-              key={id}
+              key={m}
               type="button"
-              style={chip(vendor === id, C.blue)}
-              onClick={() => setVendor(vendor === id ? "all" : id)}
+              aria-pressed={modality === m}
+              onClick={() => setModality(m)}
             >
-              {vendorLabel(id)}
+              {m === "all" ? "All" : m === "text" ? "Text" : m === "image" ? "Image" : "Video"}
             </button>
           ))}
         </div>
 
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+        <label className="pf__search">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden>
+            <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+            <path d="m20 20-3.2-3.2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
           <input
             type="search"
             placeholder="Search model or vendor…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            style={{
-              flex: "1 1 220px",
-              minWidth: 180,
-              fontSize: 13,
-              padding: "8px 12px",
-              borderRadius: 10,
-              border: `1px solid ${C.line}`,
-              background: C.panel,
-              color: C.text,
-              outline: "none",
-            }}
+            aria-label="Search models"
           />
-          <select
-            value={vendor}
-            onChange={(e) => setVendor(e.target.value)}
-            style={{
-              fontSize: 13,
-              padding: "8px 12px",
-              borderRadius: 10,
-              border: `1px solid ${C.line}`,
-              background: C.panel,
-              color: C.text,
-              cursor: "pointer",
-            }}
-          >
-            <option value="all">All vendors</option>
-            {vendors.map(([id, label]) => (
-              <option key={id} value={id}>
-                {label}
-              </option>
-            ))}
-          </select>
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
-            style={{
-              fontSize: 13,
-              padding: "8px 12px",
-              borderRadius: 10,
-              border: `1px solid ${C.line}`,
-              background: C.panel,
-              color: C.text,
-              cursor: "pointer",
-            }}
-          >
-            <option value="best">Sort: cheapest first</option>
-            <option value="name">Sort: name A–Z</option>
-          </select>
-          <span style={{ fontSize: 12.5, color: C.faint, marginLeft: "auto" }}>
-            {totalShown} of {totalAll}
-          </span>
-        </div>
+        </label>
+
+        <Select
+          value={vendor}
+          ariaLabel="Filter by vendor"
+          onChange={setVendor}
+          options={vendorOptions}
+        />
+
+        <Select
+          value={license}
+          ariaLabel="Filter by license"
+          onChange={(v) => setLicense(v as LicenseFilter)}
+          options={[
+            { value: "all", label: "All licenses" },
+            { value: "open", label: "Open weights" },
+            { value: "proprietary", label: "Proprietary" },
+          ]}
+        />
       </div>
 
       {/* ── Text table ───────────────────────────────────────── */}
@@ -305,7 +243,13 @@ export default function PriceTable({
                         <LicenseTag license={r.license} />
                       </div>
                       <div style={{ fontSize: 11.5, color: C.faint, marginTop: 3 }}>
-                        {vendorLabel(r.vendor)} · <code>{r.modelId}</code>
+                        <span className="vmark">
+                          {hasVendorIcon(r.vendor) && (
+                            <VendorIcon id={r.vendor} size={12} style={{ color: C.muted }} />
+                          )}
+                          {vendorLabel(r.vendor)}
+                        </span>{" "}
+                        · <code>{r.modelId}</code>
                       </div>
                       {r.note && (
                         <div style={{ fontSize: 11, color: C.faint, marginTop: 3, fontStyle: "italic" }}>
@@ -408,7 +352,13 @@ export default function PriceTable({
                         )}
                       </div>
                       <div style={{ fontSize: 11.5, color: C.faint, marginTop: 3 }}>
-                        {vendorLabel(r.vendor)} · <code>{r.modelId}</code>
+                        <span className="vmark">
+                          {hasVendorIcon(r.vendor) && (
+                            <VendorIcon id={r.vendor} size={12} style={{ color: C.muted }} />
+                          )}
+                          {vendorLabel(r.vendor)}
+                        </span>{" "}
+                        · <code>{r.modelId}</code>
                       </div>
                       {r.note && (
                         <div style={{ fontSize: 11, color: C.faint, marginTop: 3, fontStyle: "italic" }}>

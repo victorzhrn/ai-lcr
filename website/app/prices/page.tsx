@@ -53,18 +53,17 @@ export default function Prices() {
         <header style={{ marginBottom: 28 }}>
           <span className="eyebrow">
             <span className="dot" style={{ background: "var(--green)" }} />
-            Cheapest provider · per model
+            Price index
           </span>
           <h1 className="h1" style={{ fontSize: "clamp(28px,5vw,44px)", marginTop: 14 }}>
             The <span className="accent">cheapest provider</span> for every model.
           </h1>
           <p className="sub" style={{ marginTop: 8 }}>
-            {TEXT_MODEL_COUNT} text LLMs across OpenRouter, Kunavo &amp; TokenMart, plus {MODEL_COUNT}{" "}
-            image &amp; video models across Kunavo, fal &amp; Runware. Text is priced per 1M tokens
-            (input / output); media is normalized to one reference output (
-            <strong>{REFERENCE_LABEL}</strong>) so per-image, per-second and per-call prices compare
-            directly. The <b style={{ color: "var(--green)" }}>green</b> cell is the cheapest route,
-            the one ai-lcr picks first. Filter by open-weight vs proprietary, vendor, or search.
+            {TEXT_MODEL_COUNT} text LLMs + {MODEL_COUNT}&nbsp;image &amp; video models. Text per 1M tokens
+            (in&nbsp;/&nbsp;out); media normalized to one reference output (
+            <strong>{REFERENCE_LABEL}</strong>).
+            The <b style={{ color: "var(--green)" }}>green</b> cell is the cheapest route ai-lcr picks
+            first.
           </p>
         </header>
 

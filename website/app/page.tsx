@@ -2,7 +2,10 @@ import Switchboard from "./components/Switchboard";
 import CopyInstall from "./components/CopyInstall";
 import CodeSample from "./components/CodeSample";
 import SavingsCalculator from "./components/SavingsCalculator";
+import StatusStrip from "./components/StatusStrip";
+import Faq from "./components/Faq";
 import { MODEL_COUNT, TEXT_MODEL_COUNT, textSavings } from "@/lib/prices";
+import { statusSummary } from "@/lib/status-summary";
 
 const REPO = "victorzhrn/ai-lcr";
 const PKG = "ai-lcr";
@@ -92,8 +95,46 @@ function ArrowIcon() {
   );
 }
 
+function KeyIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden>
+      <circle cx="8" cy="8" r="4.5" strokeLinecap="round" />
+      <path d="M11.2 11.2 19 19M16 16l2-2M14 18l2-2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function LayersIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden>
+      <path d="M12 3 21 8l-9 5-9-5 9-5Z" strokeLinejoin="round" />
+      <path d="M3 13l9 5 9-5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function FailoverIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden>
+      <path d="M4 9a8 8 0 0 1 13.7-3.3L20 8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M20 4v4h-4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M20 15a8 8 0 0 1-13.7 3.3L4 16" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 20v-4h4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ReceiptIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden>
+      <path d="M6 3h12v18l-2.5-1.5L13 21l-2.5-1.5L8 21l-2-1.5V3Z" strokeLinejoin="round" />
+      <path d="M9.5 8h5M9.5 12h5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export default async function Home() {
-  const [stars, version] = await Promise.all([getStars(), getVersion()]);
+  const [stars, version, status] = await Promise.all([getStars(), getVersion(), statusSummary()]);
   const displayVersion = version ?? FALLBACK_VERSION;
   const savings = textSavings();
   const topSaving = savings[0];
@@ -273,25 +314,43 @@ export default async function Home() {
               </div>
             ))}
           </div>
+          <StatusStrip providers={status.providers} allUp={status.allUp} anyData={status.anyData} />
         </section>
 
-        <section className="stats">
-          <div className="stat reveal" style={{ "--accent": "var(--green)", animationDelay: "0.1s" } as React.CSSProperties}>
-            <div className="num">0 markup</div>
-            <div className="lbl">route straight to each vendor&apos;s own API — you keep your keys, provider-neutral</div>
+        <section className="features">
+          {[
+            { icon: <KeyIcon />, accent: "var(--green)", title: "Zero markup, your keys", desc: "Routes straight to each vendor's own API with your own keys — no proxy, no per-token fee, no lock-in." },
+            { icon: <LayersIcon />, accent: "var(--blue)", title: `${TEXT_MODEL_COUNT + MODEL_COUNT} models priced`, desc: "Text, image & video routes compared per model. See the cheapest provider for each →", href: "/prices" },
+            { icon: <FailoverIcon />, accent: "var(--amber)", title: "Automatic failover", desc: "When a provider errors — even mid-stream — traffic reroutes to the next cheapest healthy one." },
+            { icon: <ReceiptIcon />, accent: "var(--violet)", title: "Real cost tracking", desc: "An onCost callback fires the actual USD per call, so you can see and attribute every dollar." },
+          ].map((f, i) => {
+            const inner = (
+              <>
+                <span className="feature__ic" style={{ color: f.accent }}>{f.icon}</span>
+                <div className="feature__title">{f.title}</div>
+                <div className="feature__desc">{f.desc}</div>
+              </>
+            );
+            const style = { "--accent": f.accent, animationDelay: `${0.1 + i * 0.06}s` } as React.CSSProperties;
+            return f.href ? (
+              <a key={f.title} href={f.href} className="feature reveal" style={style}>{inner}</a>
+            ) : (
+              <div key={f.title} className="feature reveal" style={style}>{inner}</div>
+            );
+          })}
+        </section>
+
+        <section className="block">
+          <div className="block__head">
+            <span className="eyebrow">
+              <span className="dot" style={{ background: "var(--blue)" }} />
+              FAQ
+            </span>
+            <h2 className="h2">
+              Questions, <span className="accent">answered</span>.
+            </h2>
           </div>
-          <a href="/prices" className="stat reveal" style={{ "--accent": "var(--blue)", animationDelay: "0.16s", textDecoration: "none", color: "inherit" } as React.CSSProperties}>
-            <div className="num">{TEXT_MODEL_COUNT + MODEL_COUNT}</div>
-            <div className="lbl">text, image &amp; video models priced — cheapest route per model →</div>
-          </a>
-          <div className="stat reveal" style={{ "--accent": "var(--amber)", animationDelay: "0.22s" } as React.CSSProperties}>
-            <div className="num">auto</div>
-            <div className="lbl">streaming-safe failover the moment a provider errors</div>
-          </div>
-          <div className="stat reveal" style={{ "--accent": "var(--violet)", animationDelay: "0.28s" } as React.CSSProperties}>
-            <div className="num">USD</div>
-            <div className="lbl">real per-call cost tracking, built in</div>
-          </div>
+          <Faq />
         </section>
 
         <section className="finale reveal">

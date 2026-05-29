@@ -6,6 +6,7 @@ export interface SelectOption {
   value: string;
   label: string;
   hint?: string;
+  icon?: React.ReactNode;
 }
 
 export default function Select({
@@ -93,7 +94,10 @@ export default function Select({
         onClick={() => setOpen((v) => !v)}
         onKeyDown={onButtonKey}
       >
-        <span className="sel__val">{selected?.label}</span>
+        <span className="sel__val">
+          {selected?.icon}
+          {selected?.label}
+        </span>
         <svg className="sel__caret" viewBox="0 0 16 16" aria-hidden>
           <path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
@@ -125,6 +129,7 @@ export default function Select({
               <span className="sel__check" aria-hidden>
                 {o.value === value ? "✓" : ""}
               </span>
+              {o.icon}
               <span className="sel__opt-label">{o.label}</span>
               {o.hint && <span className="sel__opt-hint">{o.hint}</span>}
             </li>
