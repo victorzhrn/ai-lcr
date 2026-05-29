@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getPool } from "@/lib/db9";
-import { PROVIDERS, REACHABILITY_MODEL } from "@/lib/providers";
+import { PROVIDERS, REACHABILITY_MODEL, type Provider } from "@/lib/providers";
 
 export const dynamic = "force-dynamic";
 
@@ -64,8 +64,9 @@ function statusColor(s: string): string {
   return s === "pass" ? C.green : s === "fail" ? C.red : s === "warn" ? C.amber : C.faint;
 }
 
-function modelLabel(model: string): string {
-  return model === REACHABILITY_MODEL ? "GET /v1/models (reachability)" : model;
+function modelLabel(p: Provider, model: string): string {
+  if (model === REACHABILITY_MODEL) return "GET /v1/models (reachability)";
+  return p.models.find((m) => m.id === model)?.label ?? model;
 }
 
 export default async function ProviderStatus({
@@ -241,7 +242,7 @@ export default async function ProviderStatus({
                     flex: "0 0 auto",
                   }}
                 />
-                <code style={{ fontSize: 14, color: "var(--text)", fontWeight: 600 }}>{modelLabel(m)}</code>
+                <code style={{ fontSize: 14, color: "var(--text)", fontWeight: 600 }}>{modelLabel(p, m)}</code>
                 <span style={{ fontSize: 12, color: "var(--faint)" }}>
                   {known
                     ? `${up ? "operational" : "down"} · ${ago(l!.checked_at)}${l!.latency_ms != null ? ` · ${l!.latency_ms}ms` : ""}`
@@ -373,7 +374,7 @@ export default async function ProviderStatus({
                 }}
               >
                 <span style={{ color: "var(--faint)", flex: "0 0 auto" }}>{when(f.checked_at)}</span>
-                <span style={{ color: "var(--text)", flex: "0 0 auto" }}>{modelLabel(f.model)}</span>
+                <span style={{ color: "var(--text)", flex: "0 0 auto" }}>{modelLabel(p, f.model)}</span>
                 <span style={{ color: C.red, wordBreak: "break-word", flex: "1 1 200px" }}>
                   {f.error ?? "unknown error"}
                 </span>
