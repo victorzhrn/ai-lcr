@@ -17,6 +17,22 @@ type Column = { id: string; label: string; link?: string };
 type ModalityFilter = "all" | "text" | "image" | "video";
 type LicenseFilter = "all" | License;
 
+// The handful of makers worth offering as a filter — biggest catalogs + the
+// headline labs. Other vendors still show their icon/label in rows, they're
+// just not individually filterable.
+const POPULAR_VENDORS = [
+  "openai",
+  "anthropic",
+  "google",
+  "xai",
+  "deepseek",
+  "bfl",
+  "alibaba",
+  "bytedance",
+  "kuaishou",
+  "runway",
+];
+
 const C = {
   green: "var(--green)",
   text: "var(--text)",
@@ -92,10 +108,12 @@ export default function PriceTable({
   const [q, setQ] = useState("");
 
   const vendors = useMemo(() => {
-    const set = new Map<string, string>();
-    for (const r of rows) set.set(r.vendor, vendorLabel(r.vendor));
-    for (const r of textRows) set.set(r.vendor, vendorLabel(r.vendor));
-    return [...set.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+    const present = new Set<string>();
+    for (const r of rows) present.add(r.vendor);
+    for (const r of textRows) present.add(r.vendor);
+    return POPULAR_VENDORS.filter((id) => present.has(id)).map(
+      (id) => [id, vendorLabel(id)] as const,
+    );
   }, [rows, textRows]);
 
   const needle = q.trim().toLowerCase();

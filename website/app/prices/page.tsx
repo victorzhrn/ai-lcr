@@ -51,14 +51,13 @@ export default function Prices() {
 
       <main className="wrap" style={{ paddingTop: 48, paddingBottom: 80 }}>
         <header style={{ marginBottom: 28 }}>
-          <span className="eyebrow">
-            <span className="dot" style={{ background: "var(--green)" }} />
-            Price index
-          </span>
-          <h1 className="h1" style={{ fontSize: "clamp(28px,5vw,44px)", marginTop: 14 }}>
+          <h1
+            className="h1"
+            style={{ fontSize: "clamp(28px,5vw,42px)", margin: 0, maxWidth: "none" }}
+          >
             The <span className="accent">cheapest provider</span> for every model.
           </h1>
-          <p className="sub" style={{ marginTop: 8 }}>
+          <p className="sub" style={{ margin: "12px 0 0", maxWidth: "68ch" }}>
             {TEXT_MODEL_COUNT} text LLMs + {MODEL_COUNT}&nbsp;image &amp; video models. Text per 1M tokens
             (in&nbsp;/&nbsp;out); media normalized to one reference output (
             <strong>{REFERENCE_LABEL}</strong>).
