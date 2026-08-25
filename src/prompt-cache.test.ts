@@ -57,7 +57,7 @@ describe("createLCR — automatic prompt-cache breakpoint", () => {
   it("marks the last system message when promptCache is on", async () => {
     const r = recording("p");
     const lcr = createLCR({ models: { m: [r.model] }, promptCache: true });
-    await generateText({ model: lcr("m"), system: "you are helpful", prompt: "hi", ...noRetry });
+    await generateText({ model: lcr("m"), instructions: "you are helpful", prompt: "hi", ...noRetry });
 
     const prompt = r.seen.options!.prompt;
     const system = prompt.find((msg) => msg.role === "system")!;
@@ -67,7 +67,7 @@ describe("createLCR — automatic prompt-cache breakpoint", () => {
   it("uses the 1h ttl when configured", async () => {
     const r = recording("p");
     const lcr = createLCR({ models: { m: [r.model] }, promptCache: { ttl: "1h" } });
-    await generateText({ model: lcr("m"), system: "sys", prompt: "hi", ...noRetry });
+    await generateText({ model: lcr("m"), instructions: "sys", prompt: "hi", ...noRetry });
 
     const system = r.seen.options!.prompt.find((msg) => msg.role === "system")!;
     expect(cacheControlOf(system)).toEqual({ type: "ephemeral", ttl: "1h" });
@@ -76,7 +76,7 @@ describe("createLCR — automatic prompt-cache breakpoint", () => {
   it("does nothing when promptCache is off (default)", async () => {
     const r = recording("p");
     const lcr = createLCR({ models: { m: [r.model] } });
-    await generateText({ model: lcr("m"), system: "sys", prompt: "hi", ...noRetry });
+    await generateText({ model: lcr("m"), instructions: "sys", prompt: "hi", ...noRetry });
 
     const system = r.seen.options!.prompt.find((msg) => msg.role === "system")!;
     expect(cacheControlOf(system)).toBeUndefined();
@@ -85,7 +85,7 @@ describe("createLCR — automatic prompt-cache breakpoint", () => {
   it("also injects on the streaming path", async () => {
     const r = recording("p");
     const lcr = createLCR({ models: { m: [r.model] }, promptCache: true });
-    const res = streamText({ model: lcr("m"), system: "sys", prompt: "hi", ...noRetry });
+    const res = streamText({ model: lcr("m"), instructions: "sys", prompt: "hi", ...noRetry });
     for await (const _ of res.textStream) void _;
 
     const system = r.seen.options!.prompt.find((msg) => msg.role === "system")!;
