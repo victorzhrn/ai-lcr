@@ -126,13 +126,13 @@ request. Stamp the same correlation id on every step via
 your dashboard can sum the steps into a single request's cost:
 
 ```ts
-import { generateText } from "ai";
+import { generateText, isStepCount } from "ai";
 
 const requestId = crypto.randomUUID();
 await generateText({
   model: lcr("smart"),
   prompt,
-  stopWhen: stepCountIs(10),
+  stopWhen: isStepCount(10),
   providerOptions: { lcr: { requestId } }, // same id on every step
 });
 // every CallRecord for this loop now shares rec.requestId → group + sum by it

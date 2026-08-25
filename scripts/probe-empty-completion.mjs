@@ -6,7 +6,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { streamText, stepCountIs, tool } from "ai";
+import { isStepCount, streamText, tool } from "ai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { jsonSchema } from "ai";
 import { createLCR, formatCallRecord } from "../dist/index.js";
@@ -67,7 +67,7 @@ for (let i = 0; i < ITER; i++) {
     const res = streamText({
       model: lcr("gemini-3-flash"),
       tools: { getImage },
-      stopWhen: stepCountIs(4),
+      stopWhen: isStepCount(4),
       maxRetries: 0,
       prompt: "Generate an image of a red fox in snow, then tell me in one sentence what you made.",
     });

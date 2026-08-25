@@ -1,6 +1,6 @@
 {
   "name": "ai-lcr",
-  "version": "0.8.5",
+  "version": "0.9.1",
   "description": "Least Cost Routing for LLMs — route every model call to the cheapest available provider, fall back automatically, and track real cost. Built for the Vercel AI SDK.",
   "keywords": [
     "ai",
@@ -26,6 +26,9 @@
     "url": "https://github.com/ai-lcr/ai-lcr/issues"
   },
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -50,22 +53,22 @@
     "prepublishOnly": "npm run build && npm run typecheck && npm test"
   },
   "peerDependencies": {
-    "@ai-sdk/amazon-bedrock": ">=2 <6",
-    "@ai-sdk/anthropic": ">=2 <5",
-    "@ai-sdk/azure": ">=2 <5",
-    "@ai-sdk/cerebras": ">=2 <4",
-    "@ai-sdk/cohere": ">=2 <5",
-    "@ai-sdk/deepseek": ">=2 <4",
-    "@ai-sdk/fireworks": ">=2 <4",
-    "@ai-sdk/google": ">=2 <5",
-    "@ai-sdk/google-vertex": ">=2 <6",
-    "@ai-sdk/groq": ">=2 <5",
-    "@ai-sdk/mistral": ">=2 <5",
-    "@ai-sdk/openai": ">=2 <5",
-    "@ai-sdk/perplexity": ">=2 <5",
-    "@ai-sdk/togetherai": ">=2 <4",
-    "@ai-sdk/xai": ">=2 <5",
-    "ai": "^6.0.0"
+    "@ai-sdk/amazon-bedrock": ">=2 <7",
+    "@ai-sdk/anthropic": ">=2 <6",
+    "@ai-sdk/azure": ">=2 <6",
+    "@ai-sdk/cerebras": ">=2 <5",
+    "@ai-sdk/cohere": ">=2 <6",
+    "@ai-sdk/deepseek": ">=2 <5",
+    "@ai-sdk/fireworks": ">=2 <5",
+    "@ai-sdk/google": ">=2 <6",
+    "@ai-sdk/google-vertex": ">=2 <7",
+    "@ai-sdk/groq": ">=2 <6",
+    "@ai-sdk/mistral": ">=2 <6",
+    "@ai-sdk/openai": ">=2 <6",
+    "@ai-sdk/perplexity": ">=2 <6",
+    "@ai-sdk/togetherai": ">=2 <5",
+    "@ai-sdk/xai": ">=2 <6",
+    "ai": "^7.0.0"
   },
   "peerDependenciesMeta": {
     "@ai-sdk/amazon-bedrock": {
@@ -115,10 +118,10 @@
     }
   },
   "devDependencies": {
-    "@ai-sdk/openai-compatible": "^2.0.0",
-    "@ai-sdk/provider": "^3.0.0",
+    "@ai-sdk/openai-compatible": "^3.0.37",
+    "@ai-sdk/provider": "^4.0.8",
     "@types/node": "^25.9.1",
-    "ai": "^6.0.0",
+    "ai": "^7.0.79",
     "tsup": "^8.0.0",
     "typescript": "^5.5.0",
     "vitest": "^3.0.0"
